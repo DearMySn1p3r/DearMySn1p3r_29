@@ -122,12 +122,38 @@ body::before{
   width:66px;height:66px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   font-size:21px;font-weight:500;color:#fff;
-  overflow:hidden;position:relative;cursor:pointer;
-  transition:filter .2s;
+  overflow:hidden;position:relative;
   box-shadow:0 3px 14px rgba(0,0,0,.12);
+  user-select:none;
 }
-.avatar:hover{filter:brightness(.87)}
-.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+.avatar-init{
+  position:relative;z-index:1;pointer-events:none;
+}
+.avatar-img-wrap{
+  position:absolute;inset:0;overflow:hidden;border-radius:50%;
+  display:none;
+}
+.avatar-img-wrap img{
+  position:absolute;
+  transform-origin:center center;
+  cursor:grab;
+  will-change:transform;
+  max-width:none;max-height:none;
+  width:100%;height:100%;
+  object-fit:cover;
+}
+.avatar-img-wrap img:active{cursor:grabbing}
+.avatar-btn{
+  position:absolute;bottom:0;left:0;right:0;
+  height:22px;
+  background:rgba(0,0,0,.32);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:3;
+  font-size:9px;letter-spacing:.5px;color:rgba(255,255,255,.9);
+  transition:background .15s;
+}
+.avatar-btn:hover{background:rgba(0,0,0,.46)}
+.avatar-no-photo{cursor:pointer}
 .photo-input{display:none}
 
 .name-block{
@@ -250,9 +276,12 @@ body::before{
         <div class="couple-row">
 
           <div class="person-wrap">
-            <div class="avatar" id="av1" style="background:var(--c1)" onclick="document.getElementById('ph1').click()">
-              <span id="init1">?</span>
-              <img id="pi1">
+            <div class="avatar" id="av1" style="background:var(--c1)">
+              <label for="ph1" id="init1" style="cursor:pointer;display:flex;align-items:center;justify-content:center;position:absolute;inset:0;z-index:2;font-size:21px;font-weight:500;color:#fff">?</label>
+              <div class="avatar-img-wrap" id="iw1">
+                <img id="pi1" draggable="false">
+              </div>
+              <label for="ph1" class="avatar-btn" id="ab1" style="display:none">사진 변경</label>
             </div>
             <input type="file" accept="image/*" id="ph1" class="photo-input" onchange="loadPhoto(1)">
             <div class="name-block">
@@ -271,9 +300,12 @@ body::before{
           <div class="x-divider">×</div>
 
           <div class="person-wrap">
-            <div class="avatar" id="av2" style="background:var(--c2)" onclick="document.getElementById('ph2').click()">
-              <span id="init2">?</span>
-              <img id="pi2">
+            <div class="avatar" id="av2" style="background:var(--c2)">
+              <label for="ph2" id="init2" style="cursor:pointer;display:flex;align-items:center;justify-content:center;position:absolute;inset:0;z-index:2;font-size:21px;font-weight:500;color:#fff">?</label>
+              <div class="avatar-img-wrap" id="iw2">
+                <img id="pi2" draggable="false">
+              </div>
+              <label for="ph2" class="avatar-btn" id="ab2" style="display:none">사진 변경</label>
             </div>
             <input type="file" accept="image/*" id="ph2" class="photo-input" onchange="loadPhoto(2)">
             <div class="name-block">
@@ -432,17 +464,103 @@ function buildBgSwatches(){
 
 function syncPerson(n){
   const v=document.getElementById('n'+n).value.trim();
-  document.getElementById('init'+n).textContent=v?v.charAt(0):'?';
+  const lbl=document.getElementById('init'+n);
+  lbl.textContent=v?v.charAt(0):'?';
   document.getElementById('lg'+n).textContent=v||'Person '+n;
+}
+
+/* per-avatar pan/zoom state */
+const imgState={
+  1:{scale:1,tx:0,ty:0,dragging:false,lx:0,ly:0,pinching:false,pd:0},
+  2:{scale:1,tx:0,ty:0,dragging:false,lx:0,ly:0,pinching:false,pd:0},
+};
+
+function applyImgTransform(n){
+  const s=imgState[n];
+  const img=document.getElementById('pi'+n);
+  img.style.transform=`translate(${s.tx}px,${s.ty}px) scale(${s.scale})`;
+}
+
+function setupImgInteraction(n){
+  const wrap=document.getElementById('iw'+n);
+  const img=document.getElementById('pi'+n);
+  const s=imgState[n];
+
+  /* wheel zoom */
+  wrap.addEventListener('wheel',e=>{
+    e.preventDefault();
+    s.scale=Math.min(5,Math.max(.5,s.scale-(e.deltaY>0?-.15:.15)));
+    applyImgTransform(n);
+  },{passive:false});
+
+  /* mouse drag */
+  wrap.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    s.dragging=true;s.lx=e.clientX;s.ly=e.clientY;
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!s.dragging)return;
+    s.tx+=e.clientX-s.lx;s.ty+=e.clientY-s.ly;
+    s.lx=e.clientX;s.ly=e.clientY;
+    applyImgTransform(n);
+  });
+  window.addEventListener('mouseup',()=>{s.dragging=false});
+
+  /* touch drag & pinch */
+  wrap.addEventListener('touchstart',e=>{
+    if(e.touches.length===1){
+      s.dragging=true;
+      s.lx=e.touches[0].clientX;s.ly=e.touches[0].clientY;
+    } else if(e.touches.length===2){
+      s.pinching=true;s.dragging=false;
+      s.pd=Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+    }
+    e.preventDefault();
+  },{passive:false});
+
+  wrap.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    if(e.touches.length===1&&s.dragging){
+      s.tx+=e.touches[0].clientX-s.lx;
+      s.ty+=e.touches[0].clientY-s.ly;
+      s.lx=e.touches[0].clientX;s.ly=e.touches[0].clientY;
+      applyImgTransform(n);
+    } else if(e.touches.length===2&&s.pinching){
+      const nd=Math.hypot(
+        e.touches[0].clientX-e.touches[1].clientX,
+        e.touches[0].clientY-e.touches[1].clientY
+      );
+      s.scale=Math.min(5,Math.max(.5,s.scale*(nd/s.pd)));
+      s.pd=nd;
+      applyImgTransform(n);
+    }
+  },{passive:false});
+
+  wrap.addEventListener('touchend',e=>{
+    if(e.touches.length<2)s.pinching=false;
+    if(e.touches.length===0)s.dragging=false;
+  });
 }
 
 function loadPhoto(n){
   const f=document.getElementById('ph'+n).files[0];if(!f)return;
   const r=new FileReader();
   r.onload=e=>{
+    const iw=document.getElementById('iw'+n);
     const img=document.getElementById('pi'+n);
-    img.src=e.target.result;img.style.display='block';
-    document.getElementById('init'+n).style.display='none';
+    const init=document.getElementById('init'+n);
+    const ab=document.getElementById('ab'+n);
+    /* reset transform */
+    imgState[n]={scale:1,tx:0,ty:0,dragging:false,lx:0,ly:0,pinching:false,pd:0};
+    img.style.transform='';
+    img.src=e.target.result;
+    iw.style.display='block';
+    init.style.visibility='hidden';
+    ab.style.display='flex';
+    setupImgInteraction(n);
   };
   r.readAsDataURL(f);
 }
