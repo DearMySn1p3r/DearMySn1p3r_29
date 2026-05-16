@@ -35,6 +35,7 @@ body::before{
   background-size:22px 22px;
   pointer-events:none;z-index:0;
 }
+body.no-pattern::before{display:none}
 
 /* toolbar */
 .toolbar{
@@ -677,6 +678,8 @@ async function saveImg(){
   await new Promise(r=>requestAnimationFrame(r));
   await new Promise(r=>setTimeout(r,80));
 
+  document.body.classList.add('no-pattern');
+
   try{
     const av1url=getAvatarDataURL(1);
     const av2url=getAvatarDataURL(2);
@@ -734,6 +737,7 @@ async function saveImg(){
     alert('저장 실패: '+e.message);
   }finally{
     /* restore */
+    document.body.classList.remove('no-pattern');
     d1s.forEach(d=>{d.style.borderColor='';d.style.background='';});
     d2s.forEach(d=>{d.style.borderColor='';d.style.background='';});
     cap.style.width=prevWidth;
