@@ -708,9 +708,12 @@ async function saveImg(){
           }
         });
 
-        /* 2. Replace problematic gradient backgrounds with solid colors */
+        /* 2. Restore dynamic gradient on top strip using live values */
         const strip=doc.querySelector('.card-strip');
-        if(strip)strip.style.background=c1;
+        if(strip){
+          const mid=blend(c1,c2);
+          strip.style.background='linear-gradient(90deg,'+c1+','+mid+','+c2+')';
+        }
         doc.querySelectorAll('.cat-line').forEach(el=>{el.style.background='#EAD0D6'});
 
         /* 3. Hide UI-only elements */
@@ -728,11 +731,27 @@ async function saveImg(){
           if(d.classList.contains('on'))d.style.background=c2;
         });
 
-        /* 5. Inline avatar ring box-shadow */
-        const cAv1=doc.getElementById('av1');
-        const cAv2=doc.getElementById('av2');
-        if(cAv1)cAv1.style.boxShadow='0 0 0 2px #fff, 0 0 0 5px '+c1+', 0 6px 20px rgba(0,0,0,.12)';
-        if(cAv2)cAv2.style.boxShadow='0 0 0 2px #fff, 0 0 0 5px '+c2+', 0 6px 20px rgba(0,0,0,.12)';
+        /* 5. Avatar ring: wrap with colored circle + white gap (real DOM layers) */
+        [1,2].forEach((n,i)=>{
+          const ringColor=i===0?c1:c2;
+          const cAv=doc.getElementById('av'+n);
+          if(!cAv)return;
+          /* outer ring (colored) */
+          const ring=doc.createElement('div');
+          ring.style.cssText='width:108px;height:108px;border-radius:50%;background:'+ringColor+';display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.12)';
+          /* inner white gap */
+          const gap=doc.createElement('div');
+          gap.style.cssText='width:100px;height:100px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center';
+          /* clear avatar shadows so only ring has them */
+          cAv.style.boxShadow='none';
+          cAv.style.outline='none';
+          /* wrap: parent -> ring -> gap -> avatar */
+          const parent=cAv.parentNode;
+          const next=cAv.nextSibling;
+          parent.insertBefore(ring,next);
+          ring.appendChild(gap);
+          gap.appendChild(cAv);
+        });
 
         /* 6. Replace name <input> with <div> */
         [1,2].forEach(n=>{
