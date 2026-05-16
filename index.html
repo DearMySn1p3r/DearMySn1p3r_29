@@ -124,7 +124,6 @@ body::before{
   font-size:30px;font-weight:500;color:#fff;
   overflow:hidden;position:relative;
   user-select:none;
-  margin:6px;
 }
 #av1{box-shadow:0 0 0 2px #fff, 0 0 0 5px var(--c1), 0 6px 20px rgba(0,0,0,.12)}
 #av2{box-shadow:0 0 0 2px #fff, 0 0 0 5px var(--c2), 0 6px 20px rgba(0,0,0,.12)}
@@ -692,6 +691,11 @@ async function saveImg(){
         clonedDoc.querySelectorAll('.color-row, .legend, .avatar-btn').forEach(el=>{
           el.style.display='none';
         });
+        /* inline avatar ring with resolved hex colors so html2canvas renders them */
+        const cAv1=clonedDoc.getElementById('av1');
+        const cAv2=clonedDoc.getElementById('av2');
+        if(cAv1)cAv1.style.boxShadow='0 0 0 2px #fff, 0 0 0 5px '+c1+', 0 6px 20px rgba(0,0,0,.12)';
+        if(cAv2)cAv2.style.boxShadow='0 0 0 2px #fff, 0 0 0 5px '+c2+', 0 6px 20px rgba(0,0,0,.12)';
         [1,2].forEach((n,i)=>{
           const url=[av1url,av2url][i];if(!url)return;
           const ciw=clonedDoc.getElementById('iw'+n);if(!ciw)return;
