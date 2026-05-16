@@ -119,11 +119,11 @@ body::before{
 }
 
 .avatar{
-  width:66px;height:66px;border-radius:50%;
+  width:96px;height:96px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-size:21px;font-weight:500;color:#fff;
+  font-size:30px;font-weight:500;color:#fff;
   overflow:hidden;position:relative;
-  box-shadow:0 3px 14px rgba(0,0,0,.12);
+  box-shadow:0 4px 18px rgba(0,0,0,.14);
   user-select:none;
 }
 .avatar-init{
@@ -145,11 +145,11 @@ body::before{
 .avatar-img-wrap img:active{cursor:grabbing}
 .avatar-btn{
   position:absolute;bottom:0;left:0;right:0;
-  height:22px;
-  background:rgba(0,0,0,.32);
+  height:26px;
+  background:rgba(0,0,0,.34);
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;z-index:3;
-  font-size:9px;letter-spacing:.5px;color:rgba(255,255,255,.9);
+  font-size:10px;letter-spacing:.5px;color:rgba(255,255,255,.9);
   transition:background .15s;
 }
 .avatar-btn:hover{background:rgba(0,0,0,.46)}
@@ -277,7 +277,7 @@ body::before{
 
           <div class="person-wrap">
             <div class="avatar" id="av1" style="background:var(--c1)">
-              <label for="ph1" id="init1" style="cursor:pointer;display:flex;align-items:center;justify-content:center;position:absolute;inset:0;z-index:2;font-size:21px;font-weight:500;color:#fff">?</label>
+              <label for="ph1" id="init1" style="cursor:pointer;display:flex;align-items:center;justify-content:center;position:absolute;inset:0;z-index:2;font-size:30px;font-weight:500;color:#fff">?</label>
               <div class="avatar-img-wrap" id="iw1">
                 <img id="pi1" draggable="false">
               </div>
@@ -301,7 +301,7 @@ body::before{
 
           <div class="person-wrap">
             <div class="avatar" id="av2" style="background:var(--c2)">
-              <label for="ph2" id="init2" style="cursor:pointer;display:flex;align-items:center;justify-content:center;position:absolute;inset:0;z-index:2;font-size:21px;font-weight:500;color:#fff">?</label>
+              <label for="ph2" id="init2" style="cursor:pointer;display:flex;align-items:center;justify-content:center;position:absolute;inset:0;z-index:2;font-size:30px;font-weight:500;color:#fff">?</label>
               <div class="avatar-img-wrap" id="iw2">
                 <img id="pi2" draggable="false">
               </div>
@@ -620,23 +620,106 @@ function applyZoom(){
 function dz(d){zoom=Math.min(1.6,Math.max(0.4,+(zoom+d).toFixed(1)));applyZoom();}
 function rz(){zoom=1;applyZoom();}
 
+function getAvatarDataURL(n){
+  const iw=document.getElementById('iw'+n);
+  const img=document.getElementById('pi'+n);
+  const s=imgState[n];
+  if(!img.src||!img.naturalWidth||iw.style.display!=='block')return null;
+  const SIZE=96,R=6,W=SIZE*R,H=SIZE*R;
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const ctx=c.getContext('2d');
+  ctx.beginPath();ctx.arc(W/2,H/2,W/2,0,Math.PI*2);ctx.clip();
+  const nw=img.naturalWidth,nh=img.naturalHeight;
+  const cs=Math.max(SIZE/nw,SIZE/nh);
+  const dw=nw*cs*R,dh=nh*cs*R;
+  ctx.save();
+  ctx.translate(W/2+s.tx*R,H/2+s.ty*R);
+  ctx.scale(s.scale,s.scale);
+  ctx.drawImage(img,-dw/2,-dh/2,dw,dh);
+  ctx.restore();
+  return c.toDataURL('image/png');
+}
+
 async function saveImg(){
+  if(typeof html2canvas==='undefined'){
+    alert('라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');return;
+  }
+
+  const btn=document.querySelector('.tb-btn.primary');
+  btn.textContent='저장 중...';btn.disabled=true;
+
   await document.fonts.ready;
+  await new Promise(r=>requestAnimationFrame(r));
+  await new Promise(r=>setTimeout(r,100));
+
   const sw=document.getElementById('scaleWrap');
   const prev=sw.style.transform;const prevH=sw.style.height;
-  sw.style.transform='scale(1)';sw.style.height='auto';
+  sw.style.transform='none';sw.style.height='auto';
+
   const cap=document.getElementById('capture');
-  html2canvas(cap,{
-    scale:2,useCORS:true,allowTaint:true,
-    backgroundColor:'#ffffff',logging:false
-  }).then(canvas=>{
+  const cs=getComputedStyle(document.documentElement);
+  const c1=cs.getPropertyValue('--c1').trim();
+  const c2=cs.getPropertyValue('--c2').trim();
+
+  /* fix capture width to 820px so grid doesn't collapse */
+  const prevWidth=cap.style.width;
+  const prevMinWidth=cap.style.minWidth;
+  cap.style.width='820px';
+  cap.style.minWidth='820px';
+
+  /* inline CSS-var-dependent styles for html2canvas */
+  const d1s=cap.querySelectorAll('.dot.d1');
+  const d2s=cap.querySelectorAll('.dot.d2');
+  d1s.forEach(d=>{d.style.borderColor=c1;if(d.classList.contains('on'))d.style.background=c1;});
+  d2s.forEach(d=>{d.style.borderColor=c2;if(d.classList.contains('on'))d.style.background=c2;});
+
+  await new Promise(r=>requestAnimationFrame(r));
+  await new Promise(r=>setTimeout(r,80));
+
+  try{
+    const av1url=getAvatarDataURL(1);
+    const av2url=getAvatarDataURL(2);
+
+    const canvas=await html2canvas(cap,{
+      scale:3,useCORS:true,allowTaint:true,
+      backgroundColor:'#ffffff',logging:false,
+      windowWidth:900,
+      ignoreElements:el=>el.classList&&el.classList.contains('toolbar'),
+      onclone:(clonedDoc)=>{
+        /* hide color picker rows and legend in saved image */
+        clonedDoc.querySelectorAll('.color-row, .legend, .avatar-btn').forEach(el=>{
+          el.style.display='none';
+        });
+        [1,2].forEach((n,i)=>{
+          const url=[av1url,av2url][i];if(!url)return;
+          const ciw=clonedDoc.getElementById('iw'+n);if(!ciw)return;
+          const cimg=ciw.querySelector('img');if(!cimg)return;
+          cimg.src=url;
+          cimg.style.transform='none';
+          cimg.style.width='96px';cimg.style.height='96px';
+          cimg.style.objectFit='cover';
+          cimg.style.position='absolute';cimg.style.inset='0';
+          cimg.style.left='0';cimg.style.top='0';
+        });
+      },
+    });
     const n1=document.getElementById('n1').value||'person1';
     const n2=document.getElementById('n2').value||'person2';
     const a=document.createElement('a');
-    a.download=`couple-checklist-${n1}x${n2}.png`;
-    a.href=canvas.toDataURL('image/png');a.click();
+    a.download='couple-checklist-'+n1+'x'+n2+'.png';
+    a.href=canvas.toDataURL('image/png');
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }catch(e){
+    alert('저장 실패: '+e.message);
+  }finally{
+    /* restore */
+    d1s.forEach(d=>{d.style.borderColor='';d.style.background='';});
+    d2s.forEach(d=>{d.style.borderColor='';d.style.background='';});
+    cap.style.width=prevWidth;
+    cap.style.minWidth=prevMinWidth;
     sw.style.transform=prev;sw.style.height=prevH;
-  });
+    btn.textContent='이미지 저장';btn.disabled=false;
+  }
 }
 
 buildSwatches();buildBgSwatches();render();
