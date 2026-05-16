@@ -696,10 +696,25 @@ async function saveImg(){
         const cAv2=clonedDoc.getElementById('av2');
         if(cAv1)cAv1.style.boxShadow='0 0 0 2px #fff, 0 0 0 5px '+c1+', 0 6px 20px rgba(0,0,0,.12)';
         if(cAv2)cAv2.style.boxShadow='0 0 0 2px #fff, 0 0 0 5px '+c2+', 0 6px 20px rgba(0,0,0,.12)';
+        /* safety: remove any img without src (causes html2canvas 0-size error) */
+        clonedDoc.querySelectorAll('img').forEach(img=>{
+          if(!img.src||img.src===''||img.src===window.location.href){
+            img.remove();
+          }
+        });
         [1,2].forEach((n,i)=>{
-          const url=[av1url,av2url][i];if(!url)return;
+          const url=[av1url,av2url][i];
           const ciw=clonedDoc.getElementById('iw'+n);if(!ciw)return;
-          const cimg=ciw.querySelector('img');if(!cimg)return;
+          let cimg=ciw.querySelector('img');
+          if(!url){
+            /* no photo for this person - remove the wrap */
+            if(cimg)cimg.remove();
+            return;
+          }
+          if(!cimg){
+            cimg=clonedDoc.createElement('img');
+            ciw.appendChild(cimg);
+          }
           cimg.src=url;
           cimg.style.transform='none';
           cimg.style.width='96px';cimg.style.height='96px';
