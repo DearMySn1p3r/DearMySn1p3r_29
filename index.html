@@ -83,13 +83,8 @@ input{font:inherit;color:inherit}
 .tr.best .tr-l{color:var(--text);font-weight:600}
 .tr.best .tr-v{color:var(--pc);font-weight:600}
 
-.mid{display:flex;flex-direction:column;align-items:center;padding-top:30px}
-.x{font-size:15px;font-weight:300;line-height:1;color:var(--faint)}
-.sync{margin-top:12px;font-size:26px;font-weight:300;letter-spacing:-.03em;line-height:1;color:var(--text);font-variant-numeric:tabular-nums}
-.sync small{font-size:12px;font-weight:400;color:var(--sub);margin-left:1px}
-.sync-k{margin-top:6px;font-size:8.5px;letter-spacing:.3em;padding-left:.3em;color:var(--sub)}
-.same{margin-top:12px;font-size:10.5px;color:var(--sub);white-space:nowrap}
-.same b{color:var(--text);font-weight:600}
+.mid{display:flex;flex-direction:column;align-items:center;padding-top:34px}
+.x{font-size:18px;font-weight:300;line-height:1;color:var(--faint)}
 
 /* ---------- list ---------- */
 .list{padding:4px 30px 22px}
@@ -158,9 +153,8 @@ input{font:inherit;color:inherit}
   .hero{padding:22px 12px 18px}
   .hd-t{font-size:41px}
   .people{grid-template-columns:1fr 66px 1fr;margin-top:16px}
-  .mid{padding-top:26px}
-  .sync{font-size:22px}
-  .name{font-size:16px}
+  .mid{padding-top:34px}
+    .name{font-size:16px}
   .tr-v{display:none}
   .tr-l{font-size:10px;width:20px}
   .list{padding:0 8px 16px}
@@ -178,9 +172,8 @@ body.capturing{padding:0}
 .capturing .hero{padding:26px 32px 22px}
 .capturing .hd-t{font-size:48px}
 .capturing .people{grid-template-columns:1fr 104px 1fr;margin-top:20px}
-.capturing .mid{padding-top:30px}
-.capturing .sync{font-size:26px}
-.capturing .name{font-size:15px}
+.capturing .mid{padding-top:34px}
+.capturing .capturing .name{font-size:15px}
 .capturing .tr-v{display:block}
 .capturing .tr-l{font-size:10.5px;width:22px}
 .capturing .list{padding:4px 30px 22px}
@@ -202,9 +195,6 @@ body.capturing{padding:0}
           <div class="person p1" id="person1"></div>
           <div class="mid">
             <span class="x">×</span>
-            <div class="sync"><span id="syncNum">–</span><small id="syncPct">%</small></div>
-            <span class="sync-k">SYNC</span>
-            <span class="same">같은 점 <b id="same">0</b></span>
           </div>
           <div class="person p2" id="person2"></div>
         </section>
@@ -337,7 +327,7 @@ const PLUS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wi
 function buildPerson(p){
   const n=p+1;
   $('person'+n).innerHTML=
-    `<div class="av-wrap"><div class="avatar"><label for="ph${n}" class="av-init" id="init${n}">?</label><div class="av-img" id="iw${n}"><img id="pi${n}" alt="" draggable="false"></div></div><label for="ph${n}" class="av-edit no-cap" title="사진 선택" aria-label="사진 선택">${PLUS}</label></div>`+
+    `<div class="av-wrap"><div class="avatar"><label for="ph${n}" class="av-init" id="init${n}" aria-label="사진 선택"></label><div class="av-img" id="iw${n}"><img id="pi${n}" alt="" draggable="false"></div></div><label for="ph${n}" class="av-edit no-cap" title="사진 선택" aria-label="사진 선택">${PLUS}</label></div>`+
     `<input type="file" accept="image/*" id="ph${n}" hidden>`+
     `<input class="name" id="n${n}" placeholder="이름" maxlength="12" autocomplete="off" enterkeyhint="done">`+
     `<div class="type empty" id="bd${n}">—</div>`+
@@ -391,7 +381,6 @@ function updateAccent(){
 function renderNames(){
   [0,1].forEach(p=>{
     const n=p+1;
-    $('init'+n).textContent=state.names[p]?[...state.names[p]][0]:'?';
     $('pk'+n).textContent=displayName(p)+' 컬러';
     document.querySelectorAll('.chk.c'+n).forEach(b=>b.setAttribute('aria-label',displayName(p)+' 체크'));
   });
@@ -528,12 +517,6 @@ function updateStats(){
     if(lastLabel[p]!==null&&lastLabel[p]!==label){bd.classList.remove('fade');void bd.offsetWidth;bd.classList.add('fade')}
     bd.textContent=label;lastLabel[p]=label;
   });
-  let both=0,either=0;
-  ALL.forEach(it=>{const c=ck(it.id);if(c[0]&&c[1])both++;if(c[0]||c[1])either++});
-  const sync=either?Math.round(both/either*100):null;
-  $('syncNum').textContent=sync===null?'–':sync;
-  $('syncPct').style.display=sync===null?'none':'inline';
-  $('same').textContent=both;
 }
 
 /* ================= background gradient ================= */
