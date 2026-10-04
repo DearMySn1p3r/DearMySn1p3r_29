@@ -166,8 +166,9 @@ input{font:inherit;color:inherit}
 
 /* ---------- capture (applied to the clone only) ---------- */
 body.capturing{padding:0}
-.capturing #capture{width:768px;padding:24px;background:var(--bg)}
+.capturing #capture{width:720px;padding:0;background:transparent}
 .capturing .sheet{box-shadow:none}
+body.capturing{background:transparent}
 .capturing .hero{padding:26px 32px 22px}
 .capturing .hd-t{font-size:48px}
 .capturing .people{grid-template-columns:1fr 104px 1fr;margin-top:20px}
@@ -633,8 +634,8 @@ $('saveBtn').onclick=async()=>{
     await document.fonts.ready;
     const avatars=[avatarDataURL(0),avatarDataURL(1)];
     const title=gradTitleImage();
-    const canvas=await html2canvas($('capture'),{
-      scale:3,useCORS:true,backgroundColor:getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#F3F3F2',logging:false,
+    const canvas=await html2canvas(document.querySelector('.sheet'),{
+      scale:3,useCORS:true,backgroundColor:null,logging:false,
       windowWidth:1200,scrollX:0,scrollY:-window.scrollY,
       ignoreElements:el=>el.classList&&el.classList.contains('no-cap'),
       onclone:doc=>{
